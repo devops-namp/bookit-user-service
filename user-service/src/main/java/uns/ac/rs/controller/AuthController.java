@@ -7,7 +7,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import uns.ac.rs.controller.dto.TokenDTO;
 import uns.ac.rs.controller.request.LoginRequest;
-import uns.ac.rs.entity.Role;
 import uns.ac.rs.security.PasswordEncoder;
 import uns.ac.rs.security.TokenUtils;
 import uns.ac.rs.service.UserService;
@@ -35,7 +34,7 @@ public class AuthController {
         var user = userOptional.get();
         if (user.getPassword().equals(passwordEncoder.encode(loginRequest.getPassword()))) {
             try {
-                return Response.ok(new TokenDTO(tokenUtils.generateToken(user.getUsername(), Role.USER))).build();
+                return Response.ok(new TokenDTO(tokenUtils.generateToken(user.getUsername(), user.getRole()))).build();
             } catch (Exception e) {
                 e.printStackTrace();
                 return Response.status(Response.Status.BAD_REQUEST).build();
