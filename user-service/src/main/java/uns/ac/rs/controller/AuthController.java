@@ -2,6 +2,7 @@ package uns.ac.rs.controller;
 
 import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -26,7 +27,7 @@ public class AuthController {
     @PermitAll
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response login(LoginRequest loginRequest) {
+    public Response login(@Valid LoginRequest loginRequest) {
         var userOptional = userService.findByUsername(loginRequest.getUsername());
         if (userOptional.isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST).build();

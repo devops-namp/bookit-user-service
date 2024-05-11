@@ -1,5 +1,6 @@
 package uns.ac.rs.controller.request;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,6 +9,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LoginRequest {
-    public String username;
-    public String password;
+    @NotBlank(message="Username cannot be empty")
+    private String username;
+    @NotBlank(message="Password cannot be empty")
+    private String password;
 }
