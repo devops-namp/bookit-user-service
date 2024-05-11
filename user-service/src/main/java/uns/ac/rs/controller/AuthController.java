@@ -33,7 +33,7 @@ public class AuthController {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response login(LoginRequest loginRequest) {
-        var userOptional = userService.findByUserName(loginRequest.getUsername());
+        var userOptional = userService.findByUsername(loginRequest.getUsername());
         if (userOptional.isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
