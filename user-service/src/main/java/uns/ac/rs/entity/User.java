@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @AllArgsConstructor
@@ -17,6 +18,7 @@ public class User {
     private Long id;
     @Column(unique=true)
     private String username;
+    @Setter
     private String password;
     @Column(unique=true)
     private String email;
@@ -25,4 +27,20 @@ public class User {
     private String firstName;
     private String lastName;
     private String city;
+
+    public User(
+        String username,
+        String email,
+        Role role,
+        String firstName,
+        String lastName,
+        String city
+    ) {
+        this.username = username;
+        this.email = email;
+        this.role = role;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.city = city;
+    }
 }
