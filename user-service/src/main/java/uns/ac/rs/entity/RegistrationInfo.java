@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import uns.ac.rs.controller.request.RegistrationRequest;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -25,8 +27,8 @@ public class RegistrationInfo {
     private String firstName;
     private String lastName;
     private String city;
-    @Setter
     private String code;
+    private LocalDateTime timestamp;
 
     public RegistrationInfo(RegistrationRequest registrationRequest) {
         this.username = registrationRequest.getUsername();
@@ -35,5 +37,6 @@ public class RegistrationInfo {
         this.firstName = registrationRequest.getFirstName();
         this.lastName = registrationRequest.getLastName();
         this.city = registrationRequest.getCity();
+        this.timestamp = LocalDateTime.now();
     }
 }

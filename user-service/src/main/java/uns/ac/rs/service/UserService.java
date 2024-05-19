@@ -12,6 +12,7 @@ import uns.ac.rs.repository.RegistrationInfoRepository;
 import uns.ac.rs.repository.UserRepository;
 import uns.ac.rs.security.PasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -74,6 +75,7 @@ public class UserService {
         oldInfo.setLastName(newInfo.getLastName());
         oldInfo.setCity(newInfo.getCity());
         oldInfo.setCode(newInfo.getCode());
+        oldInfo.setTimestamp(LocalDateTime.now());
         registrationInfoRepository.persistAndFlush(oldInfo);
     }
 }
