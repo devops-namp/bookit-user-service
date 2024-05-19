@@ -1,0 +1,3 @@
+FROM postgres
+ENV POSTGRES_PASSWORD root
+ENV POSTGRES_DB bookit-users
