@@ -1,8 +1,5 @@
 package uns.ac.rs.service;
 
-import io.quarkus.mailer.Mail;
-import io.quarkus.mailer.Mailer;
-import io.quarkus.qute.Template;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -23,13 +20,13 @@ public class UserService {
     @Inject
     PasswordEncoder passwordEncoder;
     @Inject
-    Mailer mailer;
-    @Inject
-    Template registrationCodeTemplate;
+    EmailService emailService;
     @Inject
     UserRepository userRepository;
     @Inject
     TempUserRepository tempUserRepository;
+
+    private static final int REGISTRATION_CODE_LEN = 6;
 
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
@@ -37,18 +34,20 @@ public class UserService {
 
     @Transactional
     public void saveTempUser(TempUser tempUser, String plainTextPassword) {
-        if (isRegistrationRequestAlreadySent(tempUser.getUsername(), tempUser.getPassword())) {
+        if (isAlreadyRegistered(tempUser)) {
             throw new UserAlreadyExistsException();
         }
-        tempUser.setPassword(passwordEncoder.encode(plainTextPassword));
-        var code = RandomStringUtils.random(6, true, true).toUpperCase();
-        tempUser.setCode(code);
-        tempUserRepository.persistAndFlush(tempUser);
+        var code = RandomStringUtils.random(REGISTRATION_CODE_LEN, true, true).toUpperCase();
 
-        var instance = registrationCodeTemplate
-            .data("name", tempUser.getFirstName())
-            .data("code", code);
-        mailer.send(Mail.withHtml(tempUser.getEmail(), "[BookIt] Registration code", instance.render()));
+        tempUser.setPassword(passwordEncoder.encode(plainTextPassword));
+        tempUser.setCode(code);
+        var tempUserOptional = tempUserRepository.findByEmail(tempUser.getEmail());
+        if (tempUserOptional.isPresent()) {
+            replaceTempUser(tempUser, tempUserOptional.get());
+        } else {
+            tempUserRepository.persistAndFlush(tempUser);
+        }
+        emailService.sendRegistrationCodeEmail(tempUser);
     }
 
     @Transactional
@@ -62,8 +61,18 @@ public class UserService {
         tempUserRepository.delete(tempUser);
     }
 
-    private boolean isRegistrationRequestAlreadySent(String username, String email) {
-        return userRepository.findByUsername(username).isPresent() || userRepository.findByEmail(email).isPresent() ||
-            tempUserRepository.findByEmail(email).isPresent();
+    private boolean isAlreadyRegistered(TempUser tempUser) {
+        return userRepository.findByUsername(tempUser.getUsername()).isPresent() ||
+            userRepository.findByEmail(tempUser.getEmail()).isPresent();
+    }
+
+    private void replaceTempUser(TempUser newTempUser, TempUser oldTempUser) {
+        oldTempUser.setUsername(newTempUser.getUsername());
+        oldTempUser.setPassword(newTempUser.getPassword());
+        oldTempUser.setFirstName(newTempUser.getFirstName());
+        oldTempUser.setLastName(newTempUser.getLastName());
+        oldTempUser.setCity(newTempUser.getCity());
+        oldTempUser.setCode(newTempUser.getCode());
+        tempUserRepository.persistAndFlush(oldTempUser);
     }
 }

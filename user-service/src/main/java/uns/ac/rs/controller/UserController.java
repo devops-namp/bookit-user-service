@@ -25,7 +25,6 @@ public class UserController {
     }
 
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
     @PermitAll
     @ResponseStatus(201)
     public void register(@Valid RegistrationRequest registrationRequest) {

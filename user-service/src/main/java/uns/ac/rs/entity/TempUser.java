@@ -1,12 +1,10 @@
 package uns.ac.rs.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
@@ -18,7 +16,6 @@ public class TempUser {
     private Long id;
     @Column(unique=true)
     private String username;
-    @Setter
     private String password;
     @Column(unique=true)
     private String email;
