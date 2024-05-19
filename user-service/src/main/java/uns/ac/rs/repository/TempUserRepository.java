@@ -8,7 +8,7 @@ import java.util.Optional;
 
 @ApplicationScoped
 public class TempUserRepository implements PanacheRepository<TempUser> {
-    public Optional<TempUser> find(String email, String code) {
-        return find("email = ?1 and code = ?2", email, code).firstResultOptional();
+    public Optional<TempUser> findByEmail(String email) {
+        return find("email", email).firstResultOptional();
     }
 }

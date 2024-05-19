@@ -37,7 +37,7 @@ public class UserService {
 
     @Transactional
     public void saveTempUser(TempUser tempUser, String plainTextPassword) {
-        if (userRepository.findByUsername(tempUser.getUsername()).isPresent() || userRepository.findByEmail(tempUser.getEmail()).isPresent()) {
+        if (isRegistrationRequestAlreadySent(tempUser.getUsername(), tempUser.getPassword())) {
             throw new UserAlreadyExistsException();
         }
         tempUser.setPassword(passwordEncoder.encode(plainTextPassword));
@@ -53,12 +53,17 @@ public class UserService {
 
     @Transactional
     public void confirmRegistration(String email, String code) {
-        var tempUserOptional = tempUserRepository.find(email, code);
-        if (tempUserOptional.isEmpty()) {
+        var tempUserOptional = tempUserRepository.findByEmail(email);
+        if (tempUserOptional.isEmpty() || !tempUserOptional.get().getCode().equals(code)) {
             throw new InvalidRegistrationCodeException();
         }
         var tempUser = tempUserOptional.get();
         userRepository.persistAndFlush(new User(tempUser));
         tempUserRepository.delete(tempUser);
+    }
+
+    private boolean isRegistrationRequestAlreadySent(String username, String email) {
+        return userRepository.findByUsername(username).isPresent() || userRepository.findByEmail(email).isPresent() ||
+            tempUserRepository.findByEmail(email).isPresent();
     }
 }
