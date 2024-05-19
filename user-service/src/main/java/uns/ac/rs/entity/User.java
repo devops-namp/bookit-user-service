@@ -28,19 +28,13 @@ public class User {
     private String lastName;
     private String city;
 
-    public User(
-        String username,
-        String email,
-        Role role,
-        String firstName,
-        String lastName,
-        String city
-    ) {
-        this.username = username;
-        this.email = email;
-        this.role = role;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.city = city;
+    public User(TempUser tempUser) {
+        this.username = tempUser.getUsername();
+        this.password = tempUser.getPassword();
+        this.email = tempUser.getEmail();
+        this.role = tempUser.getRole();
+        this.firstName = tempUser.getFirstName();
+        this.lastName = tempUser.getLastName();
+        this.city = tempUser.getCity();
     }
 }

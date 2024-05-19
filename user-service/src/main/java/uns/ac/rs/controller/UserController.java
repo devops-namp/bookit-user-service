@@ -6,10 +6,10 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.ResponseStatus;
+import uns.ac.rs.controller.request.ConfirmRegistrationRequest;
 import uns.ac.rs.controller.request.RegistrationRequest;
 import uns.ac.rs.entity.Role;
 import uns.ac.rs.entity.TempUser;
-import uns.ac.rs.entity.User;
 import uns.ac.rs.service.UserService;
 
 @Path("/users")
@@ -38,5 +38,13 @@ public class UserController {
             registrationRequest.getCity()
         );
         userService.saveTempUser(user, registrationRequest.getPassword());
+    }
+
+    @POST
+    @Path("/confirm")
+    @PermitAll
+    @ResponseStatus(201)
+    public void confirmRegistration(@Valid ConfirmRegistrationRequest request) {
+        userService.confirmRegistration(request.getEmail(), request.getCode());
     }
 }

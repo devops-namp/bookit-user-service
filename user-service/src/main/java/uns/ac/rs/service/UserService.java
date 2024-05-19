@@ -7,6 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
+import uns.ac.rs.controller.exception.InvalidRegistrationCodeException;
 import uns.ac.rs.controller.exception.UserAlreadyExistsException;
 import uns.ac.rs.entity.TempUser;
 import uns.ac.rs.entity.User;
@@ -47,16 +48,17 @@ public class UserService {
         var instance = registrationCodeTemplate
             .data("name", tempUser.getFirstName())
             .data("code", code);
-        mailer.send(Mail.withHtml(tempUser.getEmail(), "[Bookit] Registration code", instance.render()));
+        mailer.send(Mail.withHtml(tempUser.getEmail(), "[BookIt] Registration code", instance.render()));
     }
 
     @Transactional
-    public void register(User user, String plainTextPassword) {
-        if (userRepository.findByUsername(user.getUsername()).isPresent() || userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new UserAlreadyExistsException();
+    public void confirmRegistration(String email, String code) {
+        var tempUserOptional = tempUserRepository.find(email, code);
+        if (tempUserOptional.isEmpty()) {
+            throw new InvalidRegistrationCodeException();
         }
-        user.setPassword(passwordEncoder.encode(plainTextPassword));
-        userRepository.persistAndFlush(user);
+        var tempUser = tempUserOptional.get();
+        userRepository.persistAndFlush(new User(tempUser));
+        tempUserRepository.delete(tempUser);
     }
-
 }
