@@ -27,7 +27,7 @@ public class UserService {
     @Inject
     RegistrationInfoRepository registrationInfoRepository;
 
-    private static final int REGISTRATION_CODE_LEN = 6;
+    public static final int REGISTRATION_CODE_LEN = 6;
 
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
