@@ -16,7 +16,7 @@ public class RegistrationRequest {
     @NotNull(message = "Username cannot be null")
     @Size(max = 200, message = "Username cannot have more than 200 characters")
     private String username;
-    @NotBlank(message="Password cannot be empty")
+    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{6,}$", message = "Password must be at least 6 characters long, contain at least one letter and one number")
     @NotNull(message = "Password cannot be null")
     private String password;
     @NotBlank(message = "Email cannot be empty")

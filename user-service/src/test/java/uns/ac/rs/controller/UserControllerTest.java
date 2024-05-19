@@ -27,6 +27,45 @@ public class UserControllerTest {
     }
 
     @Test
+    void testRegister_invalidPassword_tooShort() {
+        var registrationRequest = generateRegistrationRequest("abc", "abc@test.com");
+        registrationRequest.setPassword("abc12");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(registrationRequest)
+            .when().post("/users")
+            .then()
+            .statusCode(400);
+    }
+
+    @Test
+    void testRegister_invalidPassword_noDigits() {
+        var registrationRequest = generateRegistrationRequest("abc", "abc@test.com");
+        registrationRequest.setPassword("abcsdADrg%");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(registrationRequest)
+            .when().post("/users")
+            .then()
+            .statusCode(400);
+    }
+
+    @Test
+    void testRegister_invalidPassword_noLetters() {
+        var registrationRequest = generateRegistrationRequest("abc", "abc@test.com");
+        registrationRequest.setPassword("1223%$23#");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(registrationRequest)
+            .when().post("/users")
+            .then()
+            .statusCode(400);
+    }
+
+    @Test
     void testRegister_usernameAlreadyExists() {
         var registrationRequest = generateRegistrationRequest(EXISTING_USERNAME, "email@test.com");
 
