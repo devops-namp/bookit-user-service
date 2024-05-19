@@ -8,8 +8,7 @@ import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.ResponseStatus;
 import uns.ac.rs.controller.request.ConfirmRegistrationRequest;
 import uns.ac.rs.controller.request.RegistrationRequest;
-import uns.ac.rs.entity.Role;
-import uns.ac.rs.entity.TempUser;
+import uns.ac.rs.entity.RegistrationInfo;
 import uns.ac.rs.service.UserService;
 
 @Path("/users")
@@ -28,15 +27,8 @@ public class UserController {
     @PermitAll
     @ResponseStatus(201)
     public void register(@Valid RegistrationRequest registrationRequest) {
-        var user = new TempUser(
-            registrationRequest.getUsername(),
-            registrationRequest.getEmail(),
-            Role.valueOf(registrationRequest.getRole()),
-            registrationRequest.getFirstName(),
-            registrationRequest.getLastName(),
-            registrationRequest.getCity()
-        );
-        userService.saveTempUser(user, registrationRequest.getPassword());
+        var registrationInfo = new RegistrationInfo(registrationRequest);
+        userService.saveRegistrationInfo(registrationInfo, registrationRequest.getPassword());
     }
 
     @POST

@@ -2,14 +2,15 @@ package uns.ac.rs.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import uns.ac.rs.controller.request.RegistrationRequest;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "temp_user")
-public class TempUser {
+@Table(name = "registration_info")
+public class RegistrationInfo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -27,19 +28,12 @@ public class TempUser {
     @Setter
     private String code;
 
-    public TempUser(
-        String username,
-        String email,
-        Role role,
-        String firstName,
-        String lastName,
-        String city
-    ) {
-        this.username = username;
-        this.email = email;
-        this.role = role;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.city = city;
+    public RegistrationInfo(RegistrationRequest registrationRequest) {
+        this.username = registrationRequest.getUsername();
+        this.email = registrationRequest.getEmail();
+        this.role = Role.valueOf(registrationRequest.getRole());
+        this.firstName = registrationRequest.getFirstName();
+        this.lastName = registrationRequest.getLastName();
+        this.city = registrationRequest.getCity();
     }
 }

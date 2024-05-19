@@ -6,9 +6,9 @@ import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
 import uns.ac.rs.controller.exception.InvalidRegistrationCodeException;
 import uns.ac.rs.controller.exception.UserAlreadyExistsException;
-import uns.ac.rs.entity.TempUser;
+import uns.ac.rs.entity.RegistrationInfo;
 import uns.ac.rs.entity.User;
-import uns.ac.rs.repository.TempUserRepository;
+import uns.ac.rs.repository.RegistrationInfoRepository;
 import uns.ac.rs.repository.UserRepository;
 import uns.ac.rs.security.PasswordEncoder;
 
@@ -24,7 +24,7 @@ public class UserService {
     @Inject
     UserRepository userRepository;
     @Inject
-    TempUserRepository tempUserRepository;
+    RegistrationInfoRepository registrationInfoRepository;
 
     private static final int REGISTRATION_CODE_LEN = 6;
 
@@ -33,46 +33,47 @@ public class UserService {
     }
 
     @Transactional
-    public void saveTempUser(TempUser tempUser, String plainTextPassword) {
-        if (isAlreadyRegistered(tempUser)) {
+    public void saveRegistrationInfo(RegistrationInfo registrationInfo, String plainTextPassword) {
+        if (isAlreadyRegistered(registrationInfo)) {
             throw new UserAlreadyExistsException();
         }
         var code = RandomStringUtils.random(REGISTRATION_CODE_LEN, true, true).toUpperCase();
 
-        tempUser.setPassword(passwordEncoder.encode(plainTextPassword));
-        tempUser.setCode(code);
-        var tempUserOptional = tempUserRepository.findByEmail(tempUser.getEmail());
-        if (tempUserOptional.isPresent()) {
-            replaceTempUser(tempUser, tempUserOptional.get());
+        registrationInfo.setPassword(passwordEncoder.encode(plainTextPassword));
+        registrationInfo.setCode(code);
+        var existingRegistrationInfo = registrationInfoRepository.findByEmail(registrationInfo.getEmail());
+        if (existingRegistrationInfo.isPresent()) {
+            replaceRegistrationInfo(registrationInfo, existingRegistrationInfo.get());
         } else {
-            tempUserRepository.persistAndFlush(tempUser);
+            registrationInfoRepository.persistAndFlush(registrationInfo);
         }
-        emailService.sendRegistrationCodeEmail(tempUser);
+        emailService.sendRegistrationCodeEmail(registrationInfo);
     }
 
     @Transactional
     public void confirmRegistration(String email, String code) {
-        var tempUserOptional = tempUserRepository.findByEmail(email);
-        if (tempUserOptional.isEmpty() || !tempUserOptional.get().getCode().equals(code)) {
+        var registrationInfoOptional = registrationInfoRepository.findByEmail(email);
+        if (registrationInfoOptional.isEmpty() || !registrationInfoOptional.get().getCode().equals(code)) {
             throw new InvalidRegistrationCodeException();
         }
-        var tempUser = tempUserOptional.get();
-        userRepository.persistAndFlush(new User(tempUser));
-        tempUserRepository.delete(tempUser);
+        var registrationInfo = registrationInfoOptional.get();
+        userRepository.persistAndFlush(new User(registrationInfo));
+        registrationInfoRepository.delete(registrationInfo);
     }
 
-    private boolean isAlreadyRegistered(TempUser tempUser) {
-        return userRepository.findByUsername(tempUser.getUsername()).isPresent() ||
-            userRepository.findByEmail(tempUser.getEmail()).isPresent();
+    private boolean isAlreadyRegistered(RegistrationInfo registrationInfo) {
+        return userRepository.findByUsername(registrationInfo.getUsername()).isPresent() ||
+            userRepository.findByEmail(registrationInfo.getEmail()).isPresent();
     }
 
-    private void replaceTempUser(TempUser newTempUser, TempUser oldTempUser) {
-        oldTempUser.setUsername(newTempUser.getUsername());
-        oldTempUser.setPassword(newTempUser.getPassword());
-        oldTempUser.setFirstName(newTempUser.getFirstName());
-        oldTempUser.setLastName(newTempUser.getLastName());
-        oldTempUser.setCity(newTempUser.getCity());
-        oldTempUser.setCode(newTempUser.getCode());
-        tempUserRepository.persistAndFlush(oldTempUser);
+    private void replaceRegistrationInfo(RegistrationInfo newInfo, RegistrationInfo oldInfo) {
+        oldInfo.setUsername(newInfo.getUsername());
+        oldInfo.setPassword(newInfo.getPassword());
+        oldInfo.setRole(newInfo.getRole());
+        oldInfo.setFirstName(newInfo.getFirstName());
+        oldInfo.setLastName(newInfo.getLastName());
+        oldInfo.setCity(newInfo.getCity());
+        oldInfo.setCode(newInfo.getCode());
+        registrationInfoRepository.persistAndFlush(oldInfo);
     }
 }

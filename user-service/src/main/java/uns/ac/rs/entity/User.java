@@ -28,13 +28,13 @@ public class User {
     private String lastName;
     private String city;
 
-    public User(TempUser tempUser) {
-        this.username = tempUser.getUsername();
-        this.password = tempUser.getPassword();
-        this.email = tempUser.getEmail();
-        this.role = tempUser.getRole();
-        this.firstName = tempUser.getFirstName();
-        this.lastName = tempUser.getLastName();
-        this.city = tempUser.getCity();
+    public User(RegistrationInfo registrationInfo) {
+        this.username = registrationInfo.getUsername();
+        this.password = registrationInfo.getPassword();
+        this.email = registrationInfo.getEmail();
+        this.role = registrationInfo.getRole();
+        this.firstName = registrationInfo.getFirstName();
+        this.lastName = registrationInfo.getLastName();
+        this.city = registrationInfo.getCity();
     }
 }
