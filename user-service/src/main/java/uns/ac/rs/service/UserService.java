@@ -1,5 +1,6 @@
 package uns.ac.rs.service;
 
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -17,6 +18,8 @@ import java.util.Optional;
 @ApplicationScoped
 public class UserService {
 
+    @Inject
+    SecurityIdentity securityIdentity;
     @Inject
     PasswordEncoder passwordEncoder;
     @Inject
@@ -66,17 +69,20 @@ public class UserService {
 
     @Transactional
     public User updateProfile(String currentUsername, String newUsername, String email, String firstName, String lastName, String city) {
+        if (!securityIdentity.getPrincipal().getName().equals(currentUsername)) {
+            throw new GenericUnauthorizedException();
+        }
         var currentUserOptional = userRepository.findByUsername(currentUsername);
         if (currentUserOptional.isEmpty()) {
             throw new UserDoesNotExistException();
         }
-        if (newUsername != null && userRepository.findByUsername(newUsername).isPresent()) {
+        var user = currentUserOptional.get();
+        if (!newUsername.equals(currentUsername) && userRepository.findByUsername(newUsername).isPresent()) {
             throw new UsernameAlreadyInUseException();
         }
-        if (email != null && userRepository.findByEmail(email).isPresent()) {
+        if (!email.equals(user.getEmail()) && userRepository.findByEmail(email).isPresent()) {
             throw new EmailAlreadyInUseException();
         }
-        var user = currentUserOptional.get();
         setUserProperties(user, newUsername, email, firstName, lastName, city);
         userRepository.persistAndFlush(user);
         return user;
@@ -84,6 +90,9 @@ public class UserService {
 
     @Transactional
     public void changePassword(String username, String currentPassword, String newPassword) {
+        if (!securityIdentity.getPrincipal().getName().equals(username)) {
+            throw new GenericUnauthorizedException();
+        }
         var userOptional = userRepository.findByUsername(username);
         if (userOptional.isEmpty()) {
             throw new UserDoesNotExistException();
