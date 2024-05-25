@@ -39,6 +39,10 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
+    public User get(String username) {
+        return this.userRepository.findByUsername(username).orElseThrow(UserDoesNotExistException::new);
+    }
+
     @Transactional
     public void saveRegistrationInfo(RegistrationInfo registrationInfo, String plainTextPassword) {
         if (userRepository.findByUsername(registrationInfo.getUsername()).isPresent()) {

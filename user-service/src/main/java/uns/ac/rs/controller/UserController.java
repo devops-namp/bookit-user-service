@@ -43,6 +43,14 @@ public class UserController {
         userService.confirmRegistration(request.getEmail(), request.getCode());
     }
 
+    @GET
+    @Path("/{username}")
+    @RolesAllowed({ "GUEST", "HOST" })
+    @ResponseStatus(200)
+    public UserDTO get(@PathParam("username") String username) {
+        return new UserDTO(userService.get(username));
+    }
+
     @PUT
     @Path("/{username}")
     @RolesAllowed({ "GUEST", "HOST" })
