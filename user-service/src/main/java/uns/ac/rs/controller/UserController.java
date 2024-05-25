@@ -6,7 +6,9 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.ResponseStatus;
+import uns.ac.rs.controller.dto.UserDTO;
 import uns.ac.rs.controller.request.ConfirmRegistrationRequest;
+import uns.ac.rs.controller.request.ProfileUpdateRequest;
 import uns.ac.rs.controller.request.RegistrationRequest;
 import uns.ac.rs.entity.RegistrationInfo;
 import uns.ac.rs.service.UserService;
@@ -37,5 +39,21 @@ public class UserController {
     @ResponseStatus(201)
     public void confirmRegistration(@Valid ConfirmRegistrationRequest request) {
         userService.confirmRegistration(request.getEmail(), request.getCode());
+    }
+
+    @PUT
+    @Path("/{username}")
+    @ResponseStatus(200)
+    public UserDTO updateProfile(@PathParam("username") String currentUsername, @Valid ProfileUpdateRequest request) {
+        return new UserDTO(
+            userService.updateProfile(
+                currentUsername,
+                request.getUsername(),
+                request.getEmail(),
+                request.getFirstName(),
+                request.getLastName(),
+                request.getCity()
+            )
+        );
     }
 }

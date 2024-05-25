@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
@@ -18,7 +19,6 @@ public class User {
     private Long id;
     @Column(unique=true)
     private String username;
-    @Setter
     private String password;
     @Column(unique=true)
     private String email;
