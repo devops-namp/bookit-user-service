@@ -160,7 +160,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testUpdateProfile_successUsernameNotChanged() {
+    public void testUpdateProfile_usernameNotChanged_success() {
         var currentUsername = "testuser";
         var newUsername = "testuser";
         var email = "newemail@test.com";
