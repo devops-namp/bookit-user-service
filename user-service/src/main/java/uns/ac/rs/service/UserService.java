@@ -97,11 +97,11 @@ public class UserService {
     }
 
     private void setUserProperties(User user, String newUsername, String email, String firstName, String lastName, String city) {
-        if (newUsername != null) user.setUsername(newUsername);
-        if (email != null) user.setEmail(email);
-        if (firstName != null) user.setFirstName(firstName);
-        if (lastName != null) user.setLastName(lastName);
-        if (city != null) user.setCity(city);
+        user.setUsername(newUsername);
+        user.setEmail(email);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setCity(city);
     }
 
     private void replaceRegistrationInfo(RegistrationInfo newInfo, RegistrationInfo oldInfo) {
