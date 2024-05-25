@@ -1,12 +1,15 @@
 package uns.ac.rs.controller;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 import uns.ac.rs.controller.request.ConfirmRegistrationRequest;
+import uns.ac.rs.controller.request.ProfileUpdateRequest;
 import uns.ac.rs.controller.request.RegistrationRequest;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
 
 @QuarkusTest
 public class UserControllerTest {
@@ -123,6 +126,70 @@ public class UserControllerTest {
             .when().post("/users/confirm")
             .then()
             .statusCode(404);
+    }
+
+    @Test
+    @TestSecurity(user = "username1", roles = {"GUEST"})
+    public void testUpdateProfile_success() {
+        var request = new ProfileUpdateRequest("username1", "name@example.com", "Name", "Surname", "BG");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(request)
+            .when()
+            .put("/users/username1")
+            .then()
+            .statusCode(200)
+            .body("username", equalTo("username1"))
+            .body("email", equalTo("name@example.com"))
+            .body("firstName", equalTo("Name"))
+            .body("lastName", equalTo("Surname"))
+            .body("city", equalTo("BG"))
+            .body("token", equalTo(null));
+    }
+
+    @Test
+    @TestSecurity(user = "username2", roles = {"GUEST"})
+    public void testUpdateProfile_unauthorized() {
+        var request = new ProfileUpdateRequest("username1", "name@example.com", "Name", "Surname", "BG");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(request)
+            .when()
+            .put("/users/username1")
+            .then()
+            .statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "username2", roles = {"GUEST"})
+    public void testUpdateProfile_usernameAlreadyInUse() {
+        var request = new ProfileUpdateRequest("username1", "name123@example.com", "Name", "Surname", "BG");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(request)
+            .when()
+            .put("/users/username2")
+            .then()
+            .statusCode(400)
+            .body(containsString("Username already in use"));
+    }
+
+    @Test
+    @TestSecurity(user = "username2", roles = {"GUEST"})
+    public void testUpdateProfile_emailAlreadyInUse() {
+        var request = new ProfileUpdateRequest("username3", "name@example.com", "Name", "Surname", "BG");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(request)
+            .when()
+            .put("/users/username2")
+            .then()
+            .statusCode(400)
+            .body(containsString("Email already in use"));
     }
 
     private RegistrationRequest generateRegistrationRequest(String username, String email) {
