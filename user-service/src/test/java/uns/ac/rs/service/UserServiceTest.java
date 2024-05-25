@@ -8,7 +8,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uns.ac.rs.controller.exception.UserAlreadyExistsException;
+import uns.ac.rs.controller.exception.EmailAlreadyInUseException;
+import uns.ac.rs.controller.exception.UsernameAlreadyInUseException;
 import uns.ac.rs.entity.RegistrationInfo;
 import uns.ac.rs.entity.Role;
 import uns.ac.rs.entity.User;
@@ -94,11 +95,23 @@ public class UserServiceTest {
     }
 
     @Test
-    void testSaveRegistrationInfo_userAlreadyRegistered() {
-        var registrationInfo = generateRegistrationInfo("test", "test@test.com");
+    void testSaveRegistrationInfo_usernameAlreadyInUse() {
+        var registrationInfo = generateRegistrationInfo("test", "test1@test.com");
         when(userRepository.findByUsername("test")).thenReturn(Optional.of(new User()));
 
-        assertThrows(UserAlreadyExistsException.class, () ->
+        assertThrows(UsernameAlreadyInUseException.class, () ->
+            userService.saveRegistrationInfo(registrationInfo, "testPassword123"));
+
+        verifyNoInteractions(registrationInfoRepository);
+        verifyNoInteractions(emailService);
+    }
+
+    @Test
+    void testSaveRegistrationInfo_emailAlreadyInUse() {
+        var registrationInfo = generateRegistrationInfo("test1", "test@test.com");
+        when(userRepository.findByEmail("test@test.com")).thenReturn(Optional.of(new User()));
+
+        assertThrows(EmailAlreadyInUseException.class, () ->
             userService.saveRegistrationInfo(registrationInfo, "testPassword123"));
 
         verifyNoInteractions(registrationInfoRepository);

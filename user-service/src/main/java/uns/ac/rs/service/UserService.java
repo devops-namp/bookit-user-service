@@ -4,8 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
-import uns.ac.rs.controller.exception.InvalidRegistrationCodeException;
-import uns.ac.rs.controller.exception.UserAlreadyExistsException;
+import uns.ac.rs.controller.exception.*;
 import uns.ac.rs.entity.RegistrationInfo;
 import uns.ac.rs.entity.User;
 import uns.ac.rs.repository.RegistrationInfoRepository;
@@ -35,8 +34,11 @@ public class UserService {
 
     @Transactional
     public void saveRegistrationInfo(RegistrationInfo registrationInfo, String plainTextPassword) {
-        if (isAlreadyRegistered(registrationInfo)) {
-            throw new UserAlreadyExistsException();
+        if (userRepository.findByUsername(registrationInfo.getUsername()).isPresent()) {
+            throw new UsernameAlreadyInUseException();
+        }
+        if (userRepository.findByEmail(registrationInfo.getEmail()).isPresent()) {
+            throw new EmailAlreadyInUseException();
         }
         var code = RandomStringUtils.random(REGISTRATION_CODE_LEN, true, true).toUpperCase();
 
@@ -62,9 +64,30 @@ public class UserService {
         registrationInfoRepository.delete(registrationInfo);
     }
 
-    private boolean isAlreadyRegistered(RegistrationInfo registrationInfo) {
-        return userRepository.findByUsername(registrationInfo.getUsername()).isPresent() ||
-            userRepository.findByEmail(registrationInfo.getEmail()).isPresent();
+    @Transactional
+    public User updateProfile(String currentUsername, String newUsername, String email, String firstName, String lastName, String city) {
+        var currentUserOptional = userRepository.findByUsername(currentUsername);
+        if (currentUserOptional.isEmpty()) {
+            throw new UserDoesNotExistException();
+        }
+        if (newUsername != null && userRepository.findByUsername(newUsername).isPresent()) {
+            throw new UsernameAlreadyInUseException();
+        }
+        if (email != null && userRepository.findByEmail(email).isPresent()) {
+            throw new EmailAlreadyInUseException();
+        }
+        var user = currentUserOptional.get();
+        setUserProperties(user, newUsername, email, firstName, lastName, city);
+        userRepository.persistAndFlush(user);
+        return user;
+    }
+
+    private void setUserProperties(User user, String newUsername, String email, String firstName, String lastName, String city) {
+        if (newUsername != null) user.setUsername(newUsername);
+        if (email != null) user.setEmail(email);
+        if (firstName != null) user.setFirstName(firstName);
+        if (lastName != null) user.setLastName(lastName);
+        if (city != null) user.setCity(city);
     }
 
     private void replaceRegistrationInfo(RegistrationInfo newInfo, RegistrationInfo oldInfo) {
