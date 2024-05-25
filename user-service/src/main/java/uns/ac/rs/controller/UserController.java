@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.ResponseStatus;
+import uns.ac.rs.controller.dto.UpdatedUserDTO;
 import uns.ac.rs.controller.dto.UserDTO;
 import uns.ac.rs.controller.request.ConfirmRegistrationRequest;
 import uns.ac.rs.controller.request.ProfileUpdateRequest;
@@ -46,16 +47,15 @@ public class UserController {
     @Path("/{username}")
     @RolesAllowed({ "GUEST", "HOST" })
     @ResponseStatus(200)
-    public UserDTO updateProfile(@PathParam("username") String currentUsername, @Valid ProfileUpdateRequest request) {
-        return new UserDTO(
-            userService.updateProfile(
-                currentUsername,
-                request.getUsername(),
-                request.getEmail(),
-                request.getFirstName(),
-                request.getLastName(),
-                request.getCity()
-            )
+    public UpdatedUserDTO updateProfile(@PathParam("username") String currentUsername, @Valid ProfileUpdateRequest request) {
+        var updatedUserInfo = userService.updateProfile(
+            currentUsername,
+            request.getUsername(),
+            request.getEmail(),
+            request.getFirstName(),
+            request.getLastName(),
+            request.getCity()
         );
+        return new UpdatedUserDTO(updatedUserInfo.a, updatedUserInfo.b);
     }
 }
