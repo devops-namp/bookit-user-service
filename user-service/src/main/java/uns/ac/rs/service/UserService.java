@@ -82,6 +82,20 @@ public class UserService {
         return user;
     }
 
+    @Transactional
+    public void changePassword(String username, String currentPassword, String newPassword) {
+        var userOptional = userRepository.findByUsername(username);
+        if (userOptional.isEmpty()) {
+            throw new UserDoesNotExistException();
+        }
+        var user = userOptional.get();
+        if (!user.getPassword().equals(passwordEncoder.encode(currentPassword))) {
+            throw new PasswordDoesNotMatchException();
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.persistAndFlush(user);
+    }
+
     private void setUserProperties(User user, String newUsername, String email, String firstName, String lastName, String city) {
         if (newUsername != null) user.setUsername(newUsername);
         if (email != null) user.setEmail(email);
