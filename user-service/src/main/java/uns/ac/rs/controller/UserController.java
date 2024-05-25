@@ -1,6 +1,7 @@
 package uns.ac.rs.controller;
 
 import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -43,6 +44,7 @@ public class UserController {
 
     @PUT
     @Path("/{username}")
+    @RolesAllowed({ "GUEST", "HOST" })
     @ResponseStatus(200)
     public UserDTO updateProfile(@PathParam("username") String currentUsername, @Valid ProfileUpdateRequest request) {
         return new UserDTO(
