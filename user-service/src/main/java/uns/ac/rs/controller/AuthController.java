@@ -11,7 +11,6 @@ import org.jboss.resteasy.reactive.ResponseStatus;
 import uns.ac.rs.controller.dto.TokenDTO;
 import uns.ac.rs.controller.request.ChangePasswordRequest;
 import uns.ac.rs.controller.request.LoginRequest;
-import uns.ac.rs.entity.Role;
 import uns.ac.rs.security.PasswordEncoder;
 import uns.ac.rs.security.TokenUtils;
 import uns.ac.rs.service.UserService;
