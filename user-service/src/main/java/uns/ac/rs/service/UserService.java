@@ -4,6 +4,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.RandomStringUtils;
 import uns.ac.rs.controller.exception.*;
 import uns.ac.rs.entity.RegistrationInfo;
@@ -11,6 +12,7 @@ import uns.ac.rs.entity.User;
 import uns.ac.rs.repository.RegistrationInfoRepository;
 import uns.ac.rs.repository.UserRepository;
 import uns.ac.rs.security.PasswordEncoder;
+import uns.ac.rs.security.TokenUtils;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -22,6 +24,8 @@ public class UserService {
     SecurityIdentity securityIdentity;
     @Inject
     PasswordEncoder passwordEncoder;
+    @Inject
+    TokenUtils tokenUtils;
     @Inject
     EmailService emailService;
     @Inject
@@ -68,7 +72,7 @@ public class UserService {
     }
 
     @Transactional
-    public User updateProfile(String currentUsername, String newUsername, String email, String firstName, String lastName, String city) {
+    public Pair<User, String> updateProfile(String currentUsername, String newUsername, String email, String firstName, String lastName, String city) {
         if (!securityIdentity.getPrincipal().getName().equals(currentUsername)) {
             throw new GenericUnauthorizedException();
         }
@@ -85,7 +89,11 @@ public class UserService {
         }
         setUserProperties(user, newUsername, email, firstName, lastName, city);
         userRepository.persistAndFlush(user);
-        return user;
+        String token = null;
+        if (!currentUsername.equals(newUsername)) {
+            token = generateToken(user);
+        }
+        return new Pair<>(user, token);
     }
 
     @Transactional
@@ -123,5 +131,13 @@ public class UserService {
         oldInfo.setCode(newInfo.getCode());
         oldInfo.setTimestamp(LocalDateTime.now());
         registrationInfoRepository.persistAndFlush(oldInfo);
+    }
+
+    private String generateToken(User user) {
+        try {
+            return tokenUtils.generateToken(user.getUsername(), user.getRole());
+        } catch (Exception ignore) {
+            return null;
+        }
     }
 }
