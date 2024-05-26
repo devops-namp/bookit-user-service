@@ -1,16 +1,18 @@
 package uns.ac.rs.service;
 
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.RandomStringUtils;
-import uns.ac.rs.controller.exception.InvalidRegistrationCodeException;
-import uns.ac.rs.controller.exception.UserAlreadyExistsException;
+import uns.ac.rs.controller.exception.*;
 import uns.ac.rs.entity.RegistrationInfo;
 import uns.ac.rs.entity.User;
 import uns.ac.rs.repository.RegistrationInfoRepository;
 import uns.ac.rs.repository.UserRepository;
 import uns.ac.rs.security.PasswordEncoder;
+import uns.ac.rs.security.TokenUtils;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -19,7 +21,11 @@ import java.util.Optional;
 public class UserService {
 
     @Inject
+    SecurityIdentity securityIdentity;
+    @Inject
     PasswordEncoder passwordEncoder;
+    @Inject
+    TokenUtils tokenUtils;
     @Inject
     EmailService emailService;
     @Inject
@@ -33,10 +39,17 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
+    public User get(String username) {
+        return this.userRepository.findByUsername(username).orElseThrow(UserDoesNotExistException::new);
+    }
+
     @Transactional
     public void saveRegistrationInfo(RegistrationInfo registrationInfo, String plainTextPassword) {
-        if (isAlreadyRegistered(registrationInfo)) {
-            throw new UserAlreadyExistsException();
+        if (userRepository.findByUsername(registrationInfo.getUsername()).isPresent()) {
+            throw new UsernameAlreadyInUseException();
+        }
+        if (userRepository.findByEmail(registrationInfo.getEmail()).isPresent()) {
+            throw new EmailAlreadyInUseException();
         }
         var code = RandomStringUtils.random(REGISTRATION_CODE_LEN, true, true).toUpperCase();
 
@@ -62,9 +75,54 @@ public class UserService {
         registrationInfoRepository.delete(registrationInfo);
     }
 
-    private boolean isAlreadyRegistered(RegistrationInfo registrationInfo) {
-        return userRepository.findByUsername(registrationInfo.getUsername()).isPresent() ||
-            userRepository.findByEmail(registrationInfo.getEmail()).isPresent();
+    @Transactional
+    public Pair<User, String> updateProfile(String currentUsername, String newUsername, String email, String firstName, String lastName, String city) {
+        if (!securityIdentity.getPrincipal().getName().equals(currentUsername)) {
+            throw new GenericUnauthorizedException();
+        }
+        var currentUserOptional = userRepository.findByUsername(currentUsername);
+        if (currentUserOptional.isEmpty()) {
+            throw new UserDoesNotExistException();
+        }
+        var user = currentUserOptional.get();
+        if (!newUsername.equals(currentUsername) && userRepository.findByUsername(newUsername).isPresent()) {
+            throw new UsernameAlreadyInUseException();
+        }
+        if (!email.equals(user.getEmail()) && userRepository.findByEmail(email).isPresent()) {
+            throw new EmailAlreadyInUseException();
+        }
+        setUserProperties(user, newUsername, email, firstName, lastName, city);
+        userRepository.persistAndFlush(user);
+        String token = null;
+        if (!currentUsername.equals(newUsername)) {
+            token = generateToken(user);
+        }
+        return new Pair<>(user, token);
+    }
+
+    @Transactional
+    public void changePassword(String username, String currentPassword, String newPassword) {
+        if (!securityIdentity.getPrincipal().getName().equals(username)) {
+            throw new GenericUnauthorizedException();
+        }
+        var userOptional = userRepository.findByUsername(username);
+        if (userOptional.isEmpty()) {
+            throw new UserDoesNotExistException();
+        }
+        var user = userOptional.get();
+        if (!user.getPassword().equals(passwordEncoder.encode(currentPassword))) {
+            throw new PasswordDoesNotMatchException();
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.persistAndFlush(user);
+    }
+
+    private void setUserProperties(User user, String newUsername, String email, String firstName, String lastName, String city) {
+        user.setUsername(newUsername);
+        user.setEmail(email);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setCity(city);
     }
 
     private void replaceRegistrationInfo(RegistrationInfo newInfo, RegistrationInfo oldInfo) {
@@ -77,5 +135,13 @@ public class UserService {
         oldInfo.setCode(newInfo.getCode());
         oldInfo.setTimestamp(LocalDateTime.now());
         registrationInfoRepository.persistAndFlush(oldInfo);
+    }
+
+    private String generateToken(User user) {
+        try {
+            return tokenUtils.generateToken(user.getUsername(), user.getRole());
+        } catch (Exception ignore) {
+            return null;
+        }
     }
 }

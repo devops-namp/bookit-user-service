@@ -1,12 +1,15 @@
 package uns.ac.rs.controller;
 
 import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.ResponseStatus;
 import uns.ac.rs.controller.dto.TokenDTO;
+import uns.ac.rs.controller.request.ChangePasswordRequest;
 import uns.ac.rs.controller.request.LoginRequest;
 import uns.ac.rs.security.PasswordEncoder;
 import uns.ac.rs.security.TokenUtils;
@@ -45,4 +48,11 @@ public class AuthController {
         }
     }
 
+    @PUT
+    @Path("/password")
+    @RolesAllowed({ "GUEST", "HOST" })
+    @ResponseStatus(200)
+    public void changePassword(@Valid ChangePasswordRequest request) {
+        userService.changePassword(request.getUsername(), request.getCurrentPassword(), request.getNewPassword());
+    }
 }
