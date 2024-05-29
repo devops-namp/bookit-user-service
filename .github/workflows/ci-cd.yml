@@ -6,6 +6,7 @@ on:
       - main
       - master
       - develop
+      - feature-add-ci-cd-config
 
 permissions:
   contents: write

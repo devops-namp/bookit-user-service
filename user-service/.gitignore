@@ -42,5 +42,7 @@ nb-configuration.xml
 # Plugin directory
 /.quarkus/cli/plugins/
 
+!/code-with-quarkus/.mvn/wrapper/maven-wrapper.jar
+
 src/main/resources/privatekey.pem
 src/main/resources/publickey.pem
