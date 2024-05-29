@@ -6,7 +6,6 @@ on:
       - main
       - master
       - develop
-      - feature-add-ci-cd-config
 
 permissions:
   contents: write
@@ -17,6 +16,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       
       - name: Set up JDK 21
         uses: actions/setup-java@v2
@@ -25,12 +26,18 @@ jobs:
           java-version: '21'
       
       - name: Maven Build
-        run: ./mvnw clean package -DskipTests
+        run: ./mvnw clean package
         working-directory: ./user-service
       
       - name: List Build Artifacts
         run: ls -al ./target/quarkus-app/
         working-directory: ./user-service
+      
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       
       - name: Set up Node.js
         uses: actions/setup-node@v2
