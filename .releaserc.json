@@ -1,8 +1,7 @@
 {
     "branches": [
       "master",
-      "main",
-      "feature-add-ci-cd-config"
+      "main"
     ],
     "plugins": [
       "@semantic-release/commit-analyzer",
