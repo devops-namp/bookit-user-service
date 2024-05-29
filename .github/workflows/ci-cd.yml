@@ -6,6 +6,7 @@ on:
       - main
       - master
       - develop
+      - bugfix-ci-*
 
 permissions:
   contents: write
@@ -24,6 +25,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+
+      - name: Generate Keys
+        run: |
+          openssl genpkey -algorithm RSA -out privatekey.pem -pkeyopt rsa_keygen_bits:2048
+          openssl rsa -pubout -in privatekey.pem -out publickey.pem
+        working-directory: ./user-service/src/main/resources
       
       - name: Maven Build
         run: ./mvnw clean package
