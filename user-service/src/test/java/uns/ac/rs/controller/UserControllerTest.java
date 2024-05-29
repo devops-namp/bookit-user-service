@@ -1,12 +1,16 @@
 package uns.ac.rs.controller;
 
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import uns.ac.rs.controller.request.ConfirmRegistrationRequest;
 import uns.ac.rs.controller.request.ProfileUpdateRequest;
 import uns.ac.rs.controller.request.RegistrationRequest;
+import uns.ac.rs.service.EmailService;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -16,6 +20,14 @@ public class UserControllerTest {
 
     private static final String EXISTING_USERNAME = "username1";
     private static final String EXISTING_EMAIL = "name@example.com";
+
+    @InjectMock
+    EmailService emailService;
+
+    @BeforeEach
+    public void setup() {
+        Mockito.doNothing().when(emailService).sendRegistrationCodeEmail(Mockito.any());
+    }
 
     @Test
     void testRegister_success() {
