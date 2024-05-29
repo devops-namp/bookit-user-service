@@ -6,7 +6,7 @@ on:
       - main
       - master
       - develop
-      - feature-add-ci-cd-config
+      - feature-add-sonar
 
 permissions:
   contents: write
@@ -31,6 +31,12 @@ jobs:
       - name: List Build Artifacts
         run: ls -al ./target/quarkus-app/
         working-directory: ./user-service
+      
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       
       - name: Set up Node.js
         uses: actions/setup-node@v2
