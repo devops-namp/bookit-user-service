@@ -6,7 +6,14 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import io.vertx.core.json.JsonObject;
+
+
 import org.jboss.resteasy.reactive.ResponseStatus;
+
 import uns.ac.rs.controller.dto.UpdatedUserDTO;
 import uns.ac.rs.controller.dto.UserDTO;
 import uns.ac.rs.controller.request.ConfirmRegistrationRequest;
@@ -21,10 +28,29 @@ public class UserController {
     @Inject
     UserService userService;
 
+//    @Inject
+//    @Channel("test-queue")
+//    Emitter<Book> stringEmitter;
+
+    @Inject
+    @Channel("filter-response-queue")
+    Emitter<Book> bookEmitter;
+
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String get() {
+//        Book b = new Book("AA", "bbb");
+//        stringEmitter.send(b);
+//        System.out.println("Poslali smo");
         return "users";
+    }
+
+    @Incoming("filter-request-queue")
+    public void consume(String dobavi) {
+        Book book = new Book("Cvece", "Al");
+        System.out.println("Dobio sam zahtev da treba da ti dobavim knjigu");
+        bookEmitter.send(book);
+
     }
 
     @POST
@@ -34,6 +60,7 @@ public class UserController {
         var registrationInfo = new RegistrationInfo(registrationRequest);
         userService.saveRegistrationInfo(registrationInfo, registrationRequest.getPassword());
     }
+    
 
     @POST
     @Path("/confirm")

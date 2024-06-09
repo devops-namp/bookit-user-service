@@ -84,7 +84,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+            <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
 
         <dependency>
@@ -156,6 +156,10 @@
             <artifactId>quarkus-smallrye-metrics</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-messaging-rabbitmq</artifactId>
+        </dependency>
 
     </dependencies>
 
