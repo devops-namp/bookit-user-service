@@ -28,10 +28,6 @@ public class UserController {
     @Inject
     UserService userService;
 
-//    @Inject
-//    @Channel("test-queue")
-//    Emitter<Book> stringEmitter;
-
     @Inject
     @Channel("filter-response-queue")
     Emitter<Book> bookEmitter;
@@ -39,9 +35,6 @@ public class UserController {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String get() {
-//        Book b = new Book("AA", "bbb");
-//        stringEmitter.send(b);
-//        System.out.println("Poslali smo");
         return "users";
     }
 
