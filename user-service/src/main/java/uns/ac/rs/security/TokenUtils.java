@@ -1,8 +1,12 @@
 package uns.ac.rs.security;
 
+import io.smallrye.jwt.auth.principal.JWTParser;
+import io.smallrye.jwt.auth.principal.ParseException;
 import io.smallrye.jwt.build.Jwt;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import uns.ac.rs.entity.Role;
 
 import java.nio.charset.StandardCharsets;
@@ -10,10 +14,16 @@ import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
+import java.util.Date;
 import java.util.HashSet;
+import java.util.Set;
+
 
 @ApplicationScoped
 public class TokenUtils {
+
+    @Inject
+    JWTParser jwtParser;
 
     @ConfigProperty(name = "quarkusjwt.jwt.duration")
     Long duration;
@@ -38,6 +48,19 @@ public class TokenUtils {
 
         return claimsBuilder.jws().keyId(privateKeyLocation).sign(privateKey);
     }
+
+    public boolean validateToken(String token) {
+        try {
+            JsonWebToken jwt = jwtParser.parse(token);
+            if (!jwt.getIssuer().equals(issuer) || jwt.getExpirationTime() <= new Date().getTime() / 1000) {
+                return false;
+            }
+            return true;
+        } catch (ParseException e) {
+            return false;
+        }
+    }
+
 
     private PrivateKey readPrivateKey(final String pemResName) throws Exception {
         try (var contentIS = TokenUtils.class.getResourceAsStream(pemResName)) {

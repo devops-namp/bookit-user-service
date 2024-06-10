@@ -15,6 +15,9 @@ import uns.ac.rs.security.PasswordEncoder;
 import uns.ac.rs.security.TokenUtils;
 import uns.ac.rs.service.UserService;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Path("/auth")
 public class AuthController {
 
@@ -54,5 +57,28 @@ public class AuthController {
     @ResponseStatus(200)
     public void changePassword(@Valid ChangePasswordRequest request) {
         userService.changePassword(request.getUsername(), request.getCurrentPassword(), request.getNewPassword());
+    }
+
+    @GET
+    @Path("/validate-token")
+    @PermitAll
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response validateToken(@HeaderParam("Authorization") String token) {
+        if (token == null || token.isEmpty()) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
+        boolean isValid = tokenUtils.validateToken(token);
+        if (isValid) {
+            System.out.println("TOKEN JE VALIDAN");
+            return Response.ok().build();
+        } else {
+            System.out.println("TOKEN NIJE VALIDAN");
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+
     }
 }
