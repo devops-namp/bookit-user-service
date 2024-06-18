@@ -157,7 +157,6 @@
             <artifactId>quarkus-smallrye-opentracing</artifactId>
         </dependency>
 
-
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-messaging-rabbitmq</artifactId>
@@ -171,6 +170,11 @@
         <dependency>
             <groupId>org.eclipse.microprofile.rest.client</groupId>
             <artifactId>microprofile-rest-client-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-rabbitmq</artifactId>
         </dependency>
 
     </dependencies>

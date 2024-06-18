@@ -9,17 +9,23 @@ import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
+import jakarta.ws.rs.core.Response;
+import io.vertx.core.json.JsonObject;
 
 
 import org.jboss.resteasy.reactive.ResponseStatus;
 
 import uns.ac.rs.controller.dto.UpdatedUserDTO;
 import uns.ac.rs.controller.dto.UserDTO;
+import uns.ac.rs.controller.events.AutoApproveEvent;
 import uns.ac.rs.controller.request.ConfirmRegistrationRequest;
 import uns.ac.rs.controller.request.ProfileUpdateRequest;
 import uns.ac.rs.controller.request.RegistrationRequest;
 import uns.ac.rs.entity.RegistrationInfo;
 import uns.ac.rs.service.UserService;
+
+import java.util.List;
+import java.util.Map;
 
 @Path("/users")
 public class UserController {
@@ -27,9 +33,7 @@ public class UserController {
     @Inject
     UserService userService;
 
-    @Inject
-    @Channel("filter-response-queue")
-    Emitter<Book> bookEmitter;
+
 
     @Inject
     @Channel("delete-accommodation-queue")
@@ -41,12 +45,13 @@ public class UserController {
         return "users";
     }
 
-    @Incoming("filter-request-queue")
-    public void consume(String dobavi) {
-        Book book = new Book("Cvece", "Al");
-        System.out.println("Dobio sam zahtev da treba da ti dobavim knjigu");
-        bookEmitter.send(book);
 
+    @Incoming("autoapprove-acc-to-user-queue")
+    public void getAutoapprove(JsonObject json) {
+        AutoApproveEvent event = json.mapTo(AutoApproveEvent.class);
+        if (event.getType().equals(AutoApproveEvent.AutoApproveEventType.GET_BY_USER)) {
+            userService.sendAutoapprove(event);
+        }
     }
 
     @POST
@@ -99,5 +104,38 @@ public class UserController {
         if (result) {
             deleteAccommodationEmitter.send(username);
         }
+    }
+
+    @POST
+    @Path("/autoapproveFalse/{username}")
+    @PermitAll
+    @ResponseStatus(201)
+    public void setAutoapproveFalse(@PathParam("username") String username) {
+        userService.changeAutoapprove(username, false);
+    }
+
+    @POST
+    @Path("/autoapproveTrue/{username}")
+    @PermitAll
+    @ResponseStatus(201)
+    public void setAutoapproveTrue(@PathParam("username") String username) {
+        System.out.println("POCETAK AUTO APPROVEA");
+        userService.changeAutoapprove(username, true);
+    }
+
+    @GET
+    @Path("/getAutoapproveStatus/{username}")
+    @PermitAll
+    public Response getAutoapproveStatus(@PathParam("username") String username) {
+        boolean b = userService.getAutoapprove(username);
+        return Response.ok(b).build();
+    }
+
+    @POST
+    @Path("/getRejectCount")
+    @PermitAll
+    public Response getRejectCount(List<String> usernames) {
+        Map<String, Integer> rejectCounts = userService.getRejectCounts(usernames);
+        return Response.ok(rejectCounts).build();
     }
 }
