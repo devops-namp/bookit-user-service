@@ -27,6 +27,8 @@ public class User {
     private String firstName;
     private String lastName;
     private String city;
+    private int rejectedReservationsCount;
+    private boolean autoApprove;
 
     public User(RegistrationInfo registrationInfo) {
         this.username = registrationInfo.getUsername();
@@ -36,5 +38,7 @@ public class User {
         this.firstName = registrationInfo.getFirstName();
         this.lastName = registrationInfo.getLastName();
         this.city = registrationInfo.getCity();
+        this.rejectedReservationsCount = 0;
+        this.autoApprove = false;
     }
 }

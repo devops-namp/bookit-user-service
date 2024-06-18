@@ -8,6 +8,9 @@ import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
+import uns.ac.rs.controller.events.AutoApproveEvent;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import uns.ac.rs.controller.exception.*;
 import uns.ac.rs.controller.request.CheckReservationsRequest;
@@ -20,7 +23,12 @@ import uns.ac.rs.security.PasswordEncoder;
 import uns.ac.rs.security.TokenUtils;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+
+import static io.quarkus.hibernate.orm.panache.PanacheEntityBase.persist;
 
 @ApplicationScoped
 public class UserService {
@@ -41,6 +49,10 @@ public class UserService {
     @Inject
     @RestClient
     AccommodationApiHttpClient httpClient;
+
+    @Inject
+    @Channel("autoapprove-user-to-acc-queue")
+    Emitter<AutoApproveEvent> autoApproveEmmiter;
 
     public static final int REGISTRATION_CODE_LEN = 6;
 
@@ -165,5 +177,74 @@ public class UserService {
         } catch (Exception ignore) {
             return null;
         }
+    }
+
+    @Transactional
+    public void incrementCounter(String id) {
+        Optional<User> userOptional = userRepository.findByUsername(id);
+        if (userOptional.isEmpty()) {
+            throw new UserDoesNotExistException();
+        }
+        else {
+            User user = userOptional.get();
+            user.setRejectedReservationsCount( user.getRejectedReservationsCount()+1);
+            userRepository.persist(user);
+        }
+    }
+
+
+    public boolean getAutoapprove(String username) {
+        Optional<Boolean> autoApproveOptional = userRepository.findAutoApproveByUsername(username);
+        if (autoApproveOptional.isEmpty()) {
+            throw new UserDoesNotExistException();
+        } else {
+            return autoApproveOptional.get();
+        }
+    }
+
+    @Transactional
+    public void changeAutoapprove(String username, boolean newValue) {
+        changeAutoapproveUsers(username, newValue);
+        changeAutoapproveAccommodations(username, newValue);
+    }
+
+
+    private void changeAutoapproveAccommodations(String username, boolean newValue) {
+        // ovde treba poslati svim akomodacijama da treba da izmene svoj autoapprove
+        AutoApproveEvent event = new AutoApproveEvent();
+        event.setUsername(username);
+        event.setType(AutoApproveEvent.AutoApproveEventType.CHANGE);
+        event.setAutoapprove(newValue);
+        autoApproveEmmiter.send(event);
+        System.out.println("POSLALA SAM PREKO EMITERA AUTOAPPROVE ");
+
+    }
+
+    private void changeAutoapproveUsers(String username, boolean b) {
+        Optional<User> u = userRepository.findByUsername(username);
+        if (u.isEmpty()) throw new UserDoesNotExistException();
+        User user = u.get();
+        user.setAutoApprove(b);
+        userRepository.persist(user);
+    }
+
+    public void sendAutoapprove(AutoApproveEvent event) {
+        boolean b = getAutoapprove(event.getUsername());
+        event.setAutoapprove(b);
+        autoApproveEmmiter.send(event);
+        System.out.println("POSLALA SAM MU AUTOAPPROVE " + b);
+    }
+
+    public Map<String, Integer> getRejectCounts(List<String> usernames) {
+        Map<String, Integer> rejectCounts = new HashMap<>();
+        for (String username : usernames) {
+            Optional<User> user = userRepository.findByUsername(username);
+            if (user.isPresent()) {
+                rejectCounts.put(username, user.get().getRejectedReservationsCount());
+            } else {
+                throw new UserDoesNotExistException();
+            }
+        }
+        return rejectCounts;
     }
 }
