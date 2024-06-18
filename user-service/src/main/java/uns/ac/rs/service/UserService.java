@@ -105,16 +105,24 @@ public class UserService {
         if (!securityIdentity.getPrincipal().getName().equals(username)) {
             throw new GenericUnauthorizedException();
         }
-        var userOptional = userRepository.findByUsername(username);
-        if (userOptional.isEmpty()) {
-            throw new UserDoesNotExistException();
-        }
-        var user = userOptional.get();
+        var user = userRepository.findByUsername(username).orElseThrow(UserDoesNotExistException::new);
         if (!user.getPassword().equals(passwordEncoder.encode(currentPassword))) {
             throw new PasswordDoesNotMatchException();
         }
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.persistAndFlush(user);
+    }
+
+    @Transactional
+    public void deleteProfile(String username) {
+        if (!securityIdentity.getPrincipal().getName().equals(username)) {
+            throw new GenericUnauthorizedException();
+        }
+        var user = userRepository.findByUsername(username).orElseThrow(UserDoesNotExistException::new);
+
+        // TODO: checks
+
+        userRepository.delete(user);
     }
 
     private void setUserProperties(User user, String newUsername, String email, String firstName, String lastName, String city) {
