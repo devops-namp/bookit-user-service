@@ -86,4 +86,12 @@ public class UserController {
         );
         return new UpdatedUserDTO(updatedUserInfo.a, updatedUserInfo.b);
     }
+
+    @DELETE
+    @Path("/{username}")
+    @RolesAllowed({ "GUEST", "HOST" })
+    @ResponseStatus(200)
+    public void deleteAccount(@PathParam("username") String username) {
+        userService.deleteProfile(username);
+    }
 }
