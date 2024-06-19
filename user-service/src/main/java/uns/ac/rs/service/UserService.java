@@ -6,10 +6,13 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import uns.ac.rs.controller.exception.*;
 import uns.ac.rs.controller.request.CheckReservationsRequest;
 import uns.ac.rs.entity.RegistrationInfo;
+import uns.ac.rs.entity.Role;
 import uns.ac.rs.entity.User;
 import uns.ac.rs.repository.RegistrationInfoRepository;
 import uns.ac.rs.repository.UserRepository;
@@ -120,15 +123,17 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteProfile(String username) {
+    public boolean deleteProfile(String username) {
         if (!securityIdentity.getPrincipal().getName().equals(username)) {
             throw new GenericUnauthorizedException();
         }
         var user = userRepository.findByUsername(username).orElseThrow(UserDoesNotExistException::new);
+        var role = user.getRole();
         var result = httpClient.getResource(new CheckReservationsRequest(username, user.getRole().toString()));
 
         if (!result.isHasFutureReservations()) {
             userRepository.delete(user);
+            return role.equals(Role.HOST);
         } else {
             throw new UserHasFutureReservationsException();
         }
