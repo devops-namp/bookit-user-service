@@ -9,7 +9,6 @@ import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
-import io.vertx.core.json.JsonObject;
 
 
 import org.jboss.resteasy.reactive.ResponseStatus;
@@ -90,7 +89,7 @@ public class UserController {
     @DELETE
     @Path("/{username}")
     @RolesAllowed({ "GUEST", "HOST" })
-    @ResponseStatus(200)
+    @ResponseStatus(204)
     public void deleteAccount(@PathParam("username") String username) {
         userService.deleteProfile(username);
     }
