@@ -6,7 +6,9 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import uns.ac.rs.controller.exception.*;
+import uns.ac.rs.controller.request.CheckReservationsRequest;
 import uns.ac.rs.entity.RegistrationInfo;
 import uns.ac.rs.entity.User;
 import uns.ac.rs.repository.RegistrationInfoRepository;
@@ -32,6 +34,10 @@ public class UserService {
     UserRepository userRepository;
     @Inject
     RegistrationInfoRepository registrationInfoRepository;
+
+    @Inject
+    @RestClient
+    AccommodationApiHttpClient httpClient;
 
     public static final int REGISTRATION_CODE_LEN = 6;
 
@@ -119,10 +125,13 @@ public class UserService {
             throw new GenericUnauthorizedException();
         }
         var user = userRepository.findByUsername(username).orElseThrow(UserDoesNotExistException::new);
+        var result = httpClient.getResource(new CheckReservationsRequest(username, user.getRole().toString()));
 
-        // TODO: checks
-
-        userRepository.delete(user);
+        if (!result.isHasFutureReservations()) {
+            userRepository.delete(user);
+        } else {
+            throw new UserHasFutureReservationsException();
+        }
     }
 
     private void setUserProperties(User user, String newUsername, String email, String firstName, String lastName, String city) {
