@@ -17,9 +17,12 @@ import uns.ac.rs.service.UserService;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Logger;
 
 @Path("/auth")
 public class AuthController {
+
+    private static final Logger LOGGER = Logger.getLogger(String.valueOf(AuthController.class));
 
     @Inject
     PasswordEncoder passwordEncoder;
@@ -34,19 +37,24 @@ public class AuthController {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response login(@Valid LoginRequest loginRequest) {
+        LOGGER.info("Login request for user: " + loginRequest.getUsername());
         var userOptional = userService.findByUsername(loginRequest.getUsername());
         if (userOptional.isEmpty()) {
+            LOGGER.warning("User not found");
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
         var user = userOptional.get();
         if (user.getPassword().equals(passwordEncoder.encode(loginRequest.getPassword()))) {
             try {
+                LOGGER.info("User logged in: " + user.getUsername());
                 return Response.ok(new TokenDTO(tokenUtils.generateToken(user.getUsername(), user.getRole()))).build();
             } catch (Exception e) {
+                LOGGER.warning("Error while generating token");
                 e.printStackTrace();
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
         } else {
+            LOGGER.warning("Invalid password");
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
     }
@@ -56,6 +64,7 @@ public class AuthController {
     @RolesAllowed({ "GUEST", "HOST" })
     @ResponseStatus(200)
     public void changePassword(@Valid ChangePasswordRequest request) {
+        LOGGER.info("Change password request for user: " + request.getUsername());
         userService.changePassword(request.getUsername(), request.getCurrentPassword(), request.getNewPassword());
     }
 
@@ -64,7 +73,9 @@ public class AuthController {
     @PermitAll
     @Produces(MediaType.APPLICATION_JSON)
     public Response validateToken(@HeaderParam("Authorization") String token) {
+        LOGGER.info("Validating token");
         if (token == null || token.isEmpty()) {
+            LOGGER.warning("Token not provided");
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
 
@@ -73,9 +84,11 @@ public class AuthController {
         }
         boolean isValid = tokenUtils.validateToken(token);
         if (isValid) {
+            LOGGER.info("Token is valid");
             System.out.println("TOKEN JE VALIDAN");
             return Response.ok().build();
         } else {
+            LOGGER.warning("Invalid token");
             System.out.println("TOKEN NIJE VALIDAN");
             return Response.status(Response.Status.UNAUTHORIZED).build();
         }
