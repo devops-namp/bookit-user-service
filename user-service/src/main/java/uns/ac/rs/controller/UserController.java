@@ -31,6 +31,10 @@ public class UserController {
     @Channel("filter-response-queue")
     Emitter<Book> bookEmitter;
 
+    @Inject
+    @Channel("delete-accommodation-queue")
+    Emitter<String> deleteAccommodationEmitter;
+
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String get() {
@@ -91,6 +95,9 @@ public class UserController {
     @RolesAllowed({ "GUEST", "HOST" })
     @ResponseStatus(204)
     public void deleteAccount(@PathParam("username") String username) {
-        userService.deleteProfile(username);
+        var result = userService.deleteProfile(username);
+        if (result) {
+            deleteAccommodationEmitter.send(username);
+        }
     }
 }
