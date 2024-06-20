@@ -1,21 +1,33 @@
 package uns.ac.rs.controller;
 
 import io.quarkus.test.InjectMock;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import uns.ac.rs.controller.request.ConfirmRegistrationRequest;
 import uns.ac.rs.controller.request.ProfileUpdateRequest;
 import uns.ac.rs.controller.request.RegistrationRequest;
+import uns.ac.rs.entity.RegistrationInfo;
+import uns.ac.rs.entity.Role;
+import uns.ac.rs.entity.User;
+import uns.ac.rs.repository.RegistrationInfoRepository;
+import uns.ac.rs.repository.UserRepository;
+import uns.ac.rs.resources.PostgresResource;
 import uns.ac.rs.service.EmailService;
+
+import java.time.LocalDateTime;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 @QuarkusTest
+@QuarkusTestResource(PostgresResource.class)
 public class UserControllerTest {
 
     private static final String EXISTING_USERNAME = "username1";
@@ -24,8 +36,51 @@ public class UserControllerTest {
     @InjectMock
     EmailService emailService;
 
+    @Inject
+    UserRepository userRepository;
+
+    @Inject
+    RegistrationInfoRepository registrationInfoRepository;
+
     @BeforeEach
+    @Transactional
     public void setup() {
+        userRepository.deleteAll();
+        registrationInfoRepository.deleteAll();
+
+        User user1 = new User();
+        user1.setUsername("username1");
+        user1.setPassword("y4t6TyLTziBF7p9CT75tfqTGmMiNMAs5dyzMZKL2e9g=");
+        user1.setEmail("name@example.com");
+        user1.setFirstName("Test");
+        user1.setLastName("User");
+        user1.setCity("Test City");
+        user1.setRejectedReservationsCount(0);
+        user1.setRole(Role.GUEST);
+        user1.setAutoApprove(false);
+        userRepository.persist(user1);
+
+        User user2 = new User();
+        user2.setUsername("username2");
+        user2.setPassword("y4t6TyLTziBF7p9CT75tfqTGmMiNMAs5dyzMZKL2e9g=");
+        user2.setEmail("name2@example.com");
+        user2.setFirstName("Test");
+        user2.setLastName("User");
+        user2.setCity("Test City");
+        user2.setRejectedReservationsCount(0);
+        user2.setRole(Role.HOST);
+        user2.setAutoApprove(false);
+        userRepository.persist(user2);
+
+        RegistrationInfo registrationInfo = new RegistrationInfo();
+        registrationInfo.setTimestamp(LocalDateTime.now());
+        registrationInfo.setUsername("some_user");
+        registrationInfo.setRole(Role.GUEST);
+        registrationInfo.setEmail("request@test.com");
+        registrationInfo.setCode("123ABC");
+
+        registrationInfoRepository.persist(registrationInfo);
+
         Mockito.doNothing().when(emailService).sendRegistrationCodeEmail(Mockito.any());
     }
 
