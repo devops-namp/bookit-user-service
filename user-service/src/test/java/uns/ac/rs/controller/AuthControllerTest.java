@@ -3,9 +3,15 @@ package uns.ac.rs.controller;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uns.ac.rs.controller.request.ChangePasswordRequest;
 import uns.ac.rs.controller.request.LoginRequest;
+import uns.ac.rs.entity.Role;
+import uns.ac.rs.entity.User;
+import uns.ac.rs.repository.UserRepository;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
@@ -13,6 +19,39 @@ import static org.hamcrest.Matchers.hasKey;
 
 @QuarkusTest
 public class AuthControllerTest {
+
+    @Inject
+    UserRepository userRepository;
+
+    @BeforeEach
+    @Transactional
+    public void setup() {
+        userRepository.deleteAll();
+
+        User user1 = new User();
+        user1.setUsername("username1");
+        user1.setPassword("y4t6TyLTziBF7p9CT75tfqTGmMiNMAs5dyzMZKL2e9g=");
+        user1.setEmail("name@example.com");
+        user1.setFirstName("Test");
+        user1.setLastName("User");
+        user1.setCity("Test City");
+        user1.setRejectedReservationsCount(0);
+        user1.setRole(Role.GUEST);
+        user1.setAutoApprove(false);
+        userRepository.persist(user1);
+
+        User user2 = new User();
+        user2.setUsername("username2");
+        user2.setPassword("y4t6TyLTziBF7p9CT75tfqTGmMiNMAs5dyzMZKL2e9g=");
+        user2.setEmail("name2@example.com");
+        user2.setFirstName("Test");
+        user2.setLastName("User");
+        user2.setCity("Test City");
+        user2.setRejectedReservationsCount(0);
+        user2.setRole(Role.HOST);
+        user2.setAutoApprove(false);
+        userRepository.persist(user2);
+    }
 
     @Test
     void testLogin_success() {
