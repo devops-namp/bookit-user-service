@@ -52,6 +52,10 @@ public class UserController {
         if (event.getType().equals(AutoApproveEvent.AutoApproveEventType.GET_BY_USER)) {
             userService.sendAutoapprove(event);
         }
+        else if (event.getType().equals(AutoApproveEvent.AutoApproveEventType.INCREMENT)){
+            System.out.println("UHVATIO SAM DOGADJAJ");
+            userService.incrementCounter(event.getUsername());
+        }
     }
 
     @POST
@@ -119,7 +123,6 @@ public class UserController {
     @PermitAll
     @ResponseStatus(201)
     public void setAutoapproveTrue(@PathParam("username") String username) {
-        System.out.println("POCETAK AUTO APPROVEA");
         userService.changeAutoapprove(username, true);
     }
 

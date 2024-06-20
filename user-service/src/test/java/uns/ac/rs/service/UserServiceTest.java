@@ -3,6 +3,8 @@ package uns.ac.rs.service;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.inject.Inject;
 import lombok.SneakyThrows;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,6 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uns.ac.rs.controller.events.AutoApproveEvent;
 import uns.ac.rs.controller.exception.*;
 import uns.ac.rs.entity.RegistrationInfo;
 import uns.ac.rs.entity.Role;
@@ -21,6 +24,8 @@ import uns.ac.rs.security.TokenUtils;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -48,10 +53,14 @@ public class UserServiceTest {
     @Inject
     UserService userService;
 
+    @Mock
+    private Emitter<AutoApproveEvent> autoApproveEmmiter;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
         lenient().when(securityIdentity.getPrincipal()).thenReturn(mock(Principal.class));
+        userService.autoApproveEmmiter = autoApproveEmmiter;
     }
 
     @Test
@@ -299,4 +308,103 @@ public class UserServiceTest {
         registrationInfo.setTimestamp(LocalDateTime.now());
         return registrationInfo;
     }
+
+    @Test
+    void testIncrementCounter_userExists() {
+        User user = new User();
+        user.setUsername("testUser");
+        user.setRejectedReservationsCount(0);
+
+        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
+
+        userService.incrementCounter("testUser");
+
+        assertEquals(1, user.getRejectedReservationsCount());
+        verify(userRepository).persist(user);
+    }
+
+    @Test
+    void testIncrementCounter_userDoesNotExist() {
+        when(userRepository.findByUsername("nonExistingUser")).thenReturn(Optional.empty());
+
+        assertThrows(UserDoesNotExistException.class, () -> userService.incrementCounter("nonExistingUser"));
+    }
+
+    @Test
+    void testGetAutoapprove_userExists() {
+        when(userRepository.findAutoApproveByUsername("testUser")).thenReturn(Optional.of(true));
+
+        boolean autoapprove = userService.getAutoapprove("testUser");
+
+        assertTrue(autoapprove);
+    }
+
+    @Test
+    void testGetAutoapprove_userDoesNotExist() {
+        when(userRepository.findAutoApproveByUsername("nonExistingUser")).thenReturn(Optional.empty());
+
+        assertThrows(UserDoesNotExistException.class, () -> userService.getAutoapprove("nonExistingUser"));
+    }
+
+    @Test
+    void testChangeAutoapprove_userExists() {
+        User user = new User();
+        user.setUsername("testUser");
+        user.setAutoApprove(false);
+
+        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(user));
+
+        userService.changeAutoapprove("testUser", true);
+
+        assertTrue(user.isAutoApprove());
+        verify(userRepository).persist(user);
+        verify(autoApproveEmmiter, times(1)).send(any(AutoApproveEvent.class));
+    }
+
+    @Test
+    void testChangeAutoapprove_userDoesNotExist() {
+        when(userRepository.findByUsername("nonExistingUser")).thenReturn(Optional.empty());
+        assertThrows(UserDoesNotExistException.class, () -> userService.changeAutoapprove("nonExistingUser", true));
+    }
+
+    @Test
+    void testSendAutoapprove() {
+        AutoApproveEvent event = new AutoApproveEvent();
+        event.setUsername("testUser");
+
+        when(userRepository.findAutoApproveByUsername("testUser")).thenReturn(Optional.of(true));
+
+        userService.sendAutoapprove(event);
+
+        assertTrue(event.isAutoapprove());
+        verify(autoApproveEmmiter).send(event);
+    }
+
+    @Test
+    void testGetRejectCounts_allUsersExist() {
+        User user1 = new User();
+        user1.setUsername("user1");
+        user1.setRejectedReservationsCount(2);
+
+        User user2 = new User();
+        user2.setUsername("user2");
+        user2.setRejectedReservationsCount(3);
+
+        when(userRepository.findByUsername("user1")).thenReturn(Optional.of(user1));
+        when(userRepository.findByUsername("user2")).thenReturn(Optional.of(user2));
+
+        Map<String, Integer> rejectCounts = userService.getRejectCounts(Arrays.asList("user1", "user2"));
+
+        assertEquals(2, rejectCounts.get("user1"));
+        assertEquals(3, rejectCounts.get("user2"));
+    }
+
+    @Test
+    void testGetRejectCounts_userDoesNotExist() {
+        when(userRepository.findByUsername("nonExistingUser")).thenReturn(Optional.empty());
+
+        assertThrows(UserDoesNotExistException.class, () -> userService.getRejectCounts(Arrays.asList("nonExistingUser")));
+    }
+
+
 }

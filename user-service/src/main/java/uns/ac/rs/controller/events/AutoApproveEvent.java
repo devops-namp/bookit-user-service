@@ -23,6 +23,6 @@ public class AutoApproveEvent {
     }
 
     public enum AutoApproveEventType {
-        GET_BY_USER, CHANGE
+        GET_BY_USER, CHANGE, INCREMENT
     }
 }
