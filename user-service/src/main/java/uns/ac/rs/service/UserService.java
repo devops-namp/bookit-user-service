@@ -210,14 +210,11 @@ public class UserService {
 
 
     private void changeAutoapproveAccommodations(String username, boolean newValue) {
-        // ovde treba poslati svim akomodacijama da treba da izmene svoj autoapprove
         AutoApproveEvent event = new AutoApproveEvent();
         event.setUsername(username);
         event.setType(AutoApproveEvent.AutoApproveEventType.CHANGE);
         event.setAutoapprove(newValue);
         autoApproveEmmiter.send(event);
-        System.out.println("POSLALA SAM PREKO EMITERA AUTOAPPROVE ");
-
     }
 
     private void changeAutoapproveUsers(String username, boolean b) {
@@ -232,7 +229,6 @@ public class UserService {
         boolean b = getAutoapprove(event.getUsername());
         event.setAutoapprove(b);
         autoApproveEmmiter.send(event);
-        System.out.println("POSLALA SAM MU AUTOAPPROVE " + b);
     }
 
     public Map<String, Integer> getRejectCounts(List<String> usernames) {
@@ -247,4 +243,6 @@ public class UserService {
         }
         return rejectCounts;
     }
+
+
 }
