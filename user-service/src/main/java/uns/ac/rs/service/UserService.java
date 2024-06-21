@@ -28,11 +28,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Logger;
 
 import static io.quarkus.hibernate.orm.panache.PanacheEntityBase.persist;
 
 @ApplicationScoped
 public class UserService {
+
+    private final Logger LOG = Logger.getLogger(String.valueOf(UserService.class));
 
     @Inject
     SecurityIdentity securityIdentity;
@@ -250,7 +253,12 @@ public class UserService {
 
 
     public NotificationSettings getNotificationSettings(String username) {
+        LOG.info("Getting notification settings for user: " + username);
         NotificationSettings s = this.notificationSettingsRepository.findByUsername(username);
+        if (s == null) {
+            throw new NoResultException("No NotificationSettings found for user: " + username);
+        }
+        LOG.info("Notification settings: " + s);
         return s;
     }
 
