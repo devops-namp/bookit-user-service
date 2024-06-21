@@ -3,20 +3,21 @@ package uns.ac.rs.service;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.NoResultException;
 import jakarta.transaction.Transactional;
 import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import uns.ac.rs.controller.events.AutoApproveEvent;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import uns.ac.rs.controller.exception.*;
 import uns.ac.rs.controller.request.CheckReservationsRequest;
+import uns.ac.rs.entity.NotificationSettings;
 import uns.ac.rs.entity.RegistrationInfo;
 import uns.ac.rs.entity.Role;
 import uns.ac.rs.entity.User;
+import uns.ac.rs.repository.NotificationSettingsRepository;
 import uns.ac.rs.repository.RegistrationInfoRepository;
 import uns.ac.rs.repository.UserRepository;
 import uns.ac.rs.security.PasswordEncoder;
@@ -45,6 +46,9 @@ public class UserService {
     UserRepository userRepository;
     @Inject
     RegistrationInfoRepository registrationInfoRepository;
+
+    @Inject
+    NotificationSettingsRepository notificationSettingsRepository;
 
     @Inject
     @RestClient
@@ -245,4 +249,28 @@ public class UserService {
     }
 
 
+    public NotificationSettings getNotificationSettings(String username) {
+        NotificationSettings s = this.notificationSettingsRepository.findByUsername(username);
+        return s;
+    }
+
+    @Transactional
+    public void changeNotificationSettings(String username, NotificationSettings newSettings) {
+        Optional<User> user = userRepository.findByUsername(username);
+        if (user.isEmpty()) {
+            throw new NoResultException("No User found for username: " + username);
+        }
+
+        NotificationSettings existingSettings = notificationSettingsRepository.findByUsername(user.get().getUsername());
+        if (existingSettings != null) {
+            existingSettings.setReservationRequestCreated(newSettings.isReservationRequestCreated());
+            existingSettings.setReservationDeclined(newSettings.isReservationDeclined());
+            existingSettings.setPersonalReview(newSettings.isPersonalReview());
+            existingSettings.setAccommodationReview(newSettings.isAccommodationReview());
+            existingSettings.setReservationRequestResolved(newSettings.isReservationRequestResolved());
+            notificationSettingsRepository.persist(existingSettings);
+        } else {
+            throw new NoResultException("No NotificationSettings found for user: " + username);
+        }
+    }
 }

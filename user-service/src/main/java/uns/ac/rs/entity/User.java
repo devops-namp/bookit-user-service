@@ -30,6 +30,11 @@ public class User {
     private int rejectedReservationsCount;
     private boolean autoApprove;
 
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "notification_settings_id", referencedColumnName = "id")
+    private NotificationSettings notificationSettings;
+
+
     public User(RegistrationInfo registrationInfo) {
         this.username = registrationInfo.getUsername();
         this.password = registrationInfo.getPassword();
@@ -40,5 +45,6 @@ public class User {
         this.city = registrationInfo.getCity();
         this.rejectedReservationsCount = 0;
         this.autoApprove = false;
+        this.notificationSettings = new NotificationSettings();
     }
 }
