@@ -30,6 +30,7 @@ import uns.ac.rs.service.UserService;
 
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 @Path("/users")
 public class UserController {
@@ -40,6 +41,7 @@ public class UserController {
     @Inject
     NotificationSettingsService notificationSettingsService;
 
+    private final Logger LOG = Logger.getLogger(String.valueOf(UserController.class));
 
 
     @Inject
@@ -69,6 +71,8 @@ public class UserController {
 
     @Incoming("notification-queue")
     public Response getNotification(JsonObject json) {
+        LOG.info("Received notification event");
+        LOG.info(json.toString());
         NotificationEvent event = json.mapTo(NotificationEvent.class);
         notificationSettingsService.propagate(event);
         return Response.ok().build();
@@ -162,6 +166,7 @@ public class UserController {
     @Path("/getNotificationSettings/{username}")
     @PermitAll
     public Response getNotificationSettings(@PathParam("username") String username) {
+        LOG.info("Getting notification settings for user: " + username);
         NotificationSettings ns = this.userService.getNotificationSettings(username);
         return Response.ok(ns).build();
     }
