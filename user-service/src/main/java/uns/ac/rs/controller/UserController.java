@@ -3,6 +3,7 @@ package uns.ac.rs.controller;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.persistence.NoResultException;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -18,10 +19,13 @@ import org.jboss.resteasy.reactive.ResponseStatus;
 import uns.ac.rs.controller.dto.UpdatedUserDTO;
 import uns.ac.rs.controller.dto.UserDTO;
 import uns.ac.rs.controller.events.AutoApproveEvent;
+import uns.ac.rs.controller.events.NotificationEvent;
 import uns.ac.rs.controller.request.ConfirmRegistrationRequest;
 import uns.ac.rs.controller.request.ProfileUpdateRequest;
 import uns.ac.rs.controller.request.RegistrationRequest;
+import uns.ac.rs.entity.NotificationSettings;
 import uns.ac.rs.entity.RegistrationInfo;
+import uns.ac.rs.service.NotificationSettingsService;
 import uns.ac.rs.service.UserService;
 
 import java.util.List;
@@ -33,11 +37,16 @@ public class UserController {
     @Inject
     UserService userService;
 
+    @Inject
+    NotificationSettingsService notificationSettingsService;
+
 
 
     @Inject
     @Channel("delete-accommodation-queue")
     Emitter<String> deleteAccommodationEmitter;
+
+
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -56,6 +65,13 @@ public class UserController {
             System.out.println("UHVATIO SAM DOGADJAJ");
             userService.incrementCounter(event.getUsername());
         }
+    }
+
+    @Incoming("notification-queue")
+    public Response getNotification(JsonObject json) {
+        NotificationEvent event = json.mapTo(NotificationEvent.class);
+        notificationSettingsService.propagate(event);
+        return Response.ok().build();
     }
 
     @POST
@@ -140,5 +156,28 @@ public class UserController {
     public Response getRejectCount(List<String> usernames) {
         Map<String, Integer> rejectCounts = userService.getRejectCounts(usernames);
         return Response.ok(rejectCounts).build();
+    }
+
+    @GET
+    @Path("/getNotificationSettings/{username}")
+    @PermitAll
+    public Response getNotificationSettings(@PathParam("username") String username) {
+        NotificationSettings ns = this.userService.getNotificationSettings(username);
+        return Response.ok(ns).build();
+    }
+
+    @POST
+    @Path("/changeNotificationSettings/{username}")
+    @PermitAll
+    public Response changeNotificationSettings(@PathParam("username") String username, NotificationSettings newSettings) {
+        try {
+            userService.changeNotificationSettings(username, newSettings);
+            return Response.ok().build();
+        } catch (NoResultException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity("User not found").build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Server encountered an error").build();
+        }
     }
 }
