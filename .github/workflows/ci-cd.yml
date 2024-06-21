@@ -3,10 +3,10 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main
-      - master
-      - develop
-      - bugfix-ci-*
+    - main
+    - master
+    - develop
+    - bugfix-ci-*
 
 permissions:
   contents: write
@@ -15,82 +15,90 @@ jobs:
   build-and-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      
-      - name: Set up JDK 21
-        uses: actions/setup-java@v2
-        with:
-          distribution: 'temurin'
-          java-version: '21'
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
 
-      - name: Generate Keys
-        run: |
-          openssl genpkey -algorithm RSA -out privatekey.pem -pkeyopt rsa_keygen_bits:2048
-          openssl rsa -pubout -in privatekey.pem -out publickey.pem
-        working-directory: ./user-service/src/main/resources
-      
-      - name: Maven Build
-        run: ./mvnw clean package
-        working-directory: ./user-service
-      
-      - name: List Build Artifacts
-        run: ls -al ./target/quarkus-app/
-        working-directory: ./user-service
-      
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-      
-      - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@v4
-        id: semantic
-        with:
-          extra_plugins: |
-            @semantic-release/commit-analyzer
-            @semantic-release/release-notes-generator
-            @semantic-release/github
-            @semantic-release/git
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          DEBUG: "semantic-release:*"
-      
-      - name: Set Image Tag
-        run: |
-          if [ "${{ github.ref }}" == "refs/heads/develop" ]; then
-            echo "IMAGE_TAG=dev" >> $GITHUB_ENV
-          else
-            echo "IMAGE_TAG=${{ steps.semantic.outputs.new_release_version }}" >> $GITHUB_ENV
-          fi
+    - name: Set up JDK 21
+      uses: actions/setup-java@v2
+      with:
+        distribution: 'temurin'
+        java-version: '21'
 
-      - name: Check new release versions
-        if: steps.semantic.outputs.new_release_published == 'true'
-        run: |
-          echo ${{ steps.semantic.outputs.new_release_version }}
-          echo ${{ steps.semantic.outputs.new_release_major_version }}
-          echo ${{ steps.semantic.outputs.new_release_minor_version }}
-          echo ${{ steps.semantic.outputs.new_release_patch_version }}
-          echo ${{ env.IMAGE_TAG }}
-      
-      - name: Kaniko Build and Push
-        uses: aevea/action-kaniko@master
-        with:
-          image: gpavle/bookit-user-service
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          path: ./user-service
-          build_file: src/main/docker/Dockerfile.jvm
-          registry: docker.io
-          extra_args: "--reproducible --force"
-          debug: true
-          tag: ${{ env.IMAGE_TAG }}
+    - name: Generate Keys
+      run: |
+        openssl genpkey -algorithm RSA -out privatekey.pem -pkeyopt rsa_keygen_bits:2048
+        openssl rsa -pubout -in privatekey.pem -out publickey.pem
+      working-directory: ./user-service/src/main/resources
+
+    - name: Cache Maven packages
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-m2-
+
+    - name: Maven Build
+      run: ./mvnw clean package
+      working-directory: ./user-service
+
+    - name: List Build Artifacts
+      run: ls -al ./target/quarkus-app/
+      working-directory: ./user-service
+
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Semantic Release
+      uses: cycjimmy/semantic-release-action@v4
+      id: semantic
+      with:
+        extra_plugins: |
+          @semantic-release/commit-analyzer
+          @semantic-release/release-notes-generator
+          @semantic-release/github
+          @semantic-release/git
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        DEBUG: "semantic-release:*"
+
+    - name: Set Image Tag
+      run: |
+        if [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+          echo "IMAGE_TAG=dev" >> $GITHUB_ENV
+        else
+          echo "IMAGE_TAG=${{ steps.semantic.outputs.new_release_version }}" >> $GITHUB_ENV
+        fi
+
+    - name: Check new release versions
+      if: steps.semantic.outputs.new_release_published == 'true'
+      run: |
+        echo ${{ steps.semantic.outputs.new_release_version }}
+        echo ${{ steps.semantic.outputs.new_release_major_version }}
+        echo ${{ steps.semantic.outputs.new_release_minor_version }}
+        echo ${{ steps.semantic.outputs.new_release_patch_version }}
+        echo ${{ env.IMAGE_TAG }}
+
+    - name: Kaniko Build and Push
+      uses: aevea/action-kaniko@master
+      with:
+        image: gpavle/bookit-user-service
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        path: ./user-service
+        build_file: src/main/docker/Dockerfile.jvm
+        registry: docker.io
+        extra_args: "--reproducible --force"
+        debug: true
+        tag: ${{ env.IMAGE_TAG }}
 
